@@ -69,3 +69,6 @@ console.log("กำลังดึงข้อมูลจาก Database:", mon
 console.log("กำลังดึงข้อมูลจาก Collection:", Log.collection.name); 
 
 app.listen(5000, () => console.log('🚀 Backend stand by on port 5000'));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Backend stand by on port ${PORT}`));
