@@ -1,0 +1,5 @@
+# Dependencies
+node_modules
+
+# Environment variables - ไฟล์เก็บความลับ ห้ามอัปโหลดเด็ดขาด!
+.env
