@@ -19,7 +19,11 @@ if (!mongoURI) {
 }
 
 mongoose.connect(mongoURI)
-  .then(() => console.log('✅ Connected to MongoDB: WasteSystem'))
+  .then(() => {
+    console.log('✅ Connected to MongoDB: WasteSystem');
+    console.log("กำลังดึงข้อมูลจาก Database:", mongoose.connection.name);
+    console.log("กำลังดึงข้อมูลจาก Collection:", Log.collection.name); 
+  })
   .catch((err) => console.error('❌ Connection Error:', err));
 
 // Schema ต้องตรงกับ Field ใน Atlas (class_eng, confidence, timestamp)
@@ -62,13 +66,6 @@ app.post('/api/bins', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-// แก้ไขบรรทัดที่เกือบสุดท้าย
-console.log("กำลังดึงข้อมูลจาก Database:", mongoose.connection.name);
-// เปลี่ยน LogModel เป็น Log
-console.log("กำลังดึงข้อมูลจาก Collection:", Log.collection.name); 
-
-app.listen(5000, () => console.log('🚀 Backend stand by on port 5000'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Backend stand by on port ${PORT}`));
