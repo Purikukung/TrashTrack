@@ -2,70 +2,69 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-// 1. โหลดตัวแปรจาก .env เข้าสู่ระบบ
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+
+// --- แก้ไขจุดที่ 1: การตั้งค่า CORS ---
+// ถ้าใช้ app.use(cors()) เฉยๆ จะเป็นการเปิดรับทุกที่ (ซึ่งง่ายแต่อาจไม่ปลอดภัยที่สุด)
+// แนะนำให้ระบุ URL ของ Vercel ลงไป
+app.use(cors({
+  origin: [
+    'https://trash-track-kappa.vercel.app', 
+    'http://localhost:5173' //ไว้ใช้ทดสอบตอนรันในเครื่องตัวเอง
+  ],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 
-// 2. ดึง URI จาก Environment Variable ที่เราตั้งไว้ในไฟล์ .env
-const mongoURI = process.env.MONGODB_URI; // เปลี่ยนจาก MONGO_URI เป็น MONGODB_URI
+// --- แก้ไขจุดที่ 2: ลำดับการประกาศ Model ---
+// ต้องประกาศ Schema และ Model *ก่อน* ที่จะเรียกใช้ใน mongoose.connect หรือ Route
+const logSchema = new mongoose.Schema({
+  class_eng: String,
+  confidence: Number,
+  timestamp: { type: Date, default: Date.now } // ใส่ default ไว้กันพลาดครับ
+});
 
-// ตรวจสอบว่า MONGO_URI ถูกกำหนดค่าหรือไม่
+const Log = mongoose.model('Log', logSchema, 'logs');
+
+// --- การเชื่อมต่อ MongoDB ---
+const mongoURI = process.env.MONGODB_URI;
+
 if (!mongoURI) {
-  console.error('❌ MONGODB_URI is not defined in the .env file. Please check your environment variables.'); // อัปเดตข้อความแจ้งเตือน
-  process.exit(1); // ออกจากโปรแกรมทันทีถ้าไม่มี URI
+  console.error('❌ MONGODB_URI is not defined!');
+  process.exit(1);
 }
 
 mongoose.connect(mongoURI)
   .then(() => {
-    console.log('✅ Connected to MongoDB: WasteSystem');
-    console.log("กำลังดึงข้อมูลจาก Database:", mongoose.connection.name);
-    console.log("กำลังดึงข้อมูลจาก Collection:", Log.collection.name); 
+    console.log('✅ Connected to MongoDB');
   })
   .catch((err) => console.error('❌ Connection Error:', err));
 
-// Schema ต้องตรงกับ Field ใน Atlas (class_eng, confidence, timestamp)
-const logSchema = new mongoose.Schema({
-  class_eng: String,
-  confidence: Number,
-  timestamp: Date
-});
-
-// บังคับให้ใช้ collection ชื่อ 'logs' เท่านั้น
-const Log = mongoose.model('Log', logSchema, 'logs');
-
+// --- API Routes ---
 app.get('/api/bins', async (req, res) => {
   try {
-    // ดึงข้อมูลและเรียงจากใหม่ไปเก่า
     const data = await Log.find().sort({ timestamp: -1 });
-
-    if (data.length > 0) {
-      console.log(`[${new Date().toLocaleTimeString()}] ✅ ดึงข้อมูลสำเร็จ: ${data.length} รายการ`);
-    } else {
-      console.log(`[${new Date().toLocaleTimeString()}] ℹ️ ดึงข้อมูลสำเร็จ แต่ไม่พบข้อมูลใน Collection 'logs' (0 รายการ)`);
-      console.log('    โปรดตรวจสอบว่ามีข้อมูลใน MongoDB Atlas -> Database -> Collections -> logs หรือไม่');
-    }
-
     res.json(data);
   } catch (error) {
-    console.error(`[${new Date().toLocaleTimeString()}] ❌ เกิดข้อผิดพลาดในการดึงข้อมูล API:`, error);
-    console.error('    รายละเอียดข้อผิดพลาด:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- เพิ่ม Route POST สำหรับรับข้อมูลจาก IoT หรือทดสอบเพิ่มข้อมูลเอง ---
 app.post('/api/bins', async (req, res) => {
   try {
     const newLog = new Log(req.body);
-    await newLog.save(); // บันทึกลง MongoDB
+    await newLog.save();
     res.status(201).json({ message: 'บันทึกข้อมูลสำเร็จ!', data: newLog });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-const PORT = process.env.PORT || 5000;
+// --- แก้ไขจุดที่ 3: Port สำหรับ Render ---
+// Render จะสุ่ม Port ให้เราผ่าน process.env.PORT เสมอ
+const PORT = process.env.PORT || 10000; 
 app.listen(PORT, () => console.log(`🚀 Backend stand by on port ${PORT}`));
