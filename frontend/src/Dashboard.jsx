@@ -39,7 +39,7 @@ const Dashboard = () => {
       setError(null); // เอาคอมเมนต์ออก: เคลียร์ค่า Error ทุกครั้ง เพื่อให้หน้าเว็บกลับมาปกติถ้าเซิร์ฟเวอร์กลับมาทำงาน
       try {
         // เพิ่ม cache: 'no-store' เพื่อบังคับให้เบราว์เซอร์ดึงข้อมูลใหม่จากเซิร์ฟเวอร์เสมอ (ห้ามจำค่าเก่า)
-        const response = await fetch('http://localhost:5000/api/bins', {
+        const response = await fetch('https://trashtrack-37tf.onrender.com/api/bins', {
           cache: 'no-store'
         }); 
         
